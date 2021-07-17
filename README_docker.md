@@ -17,21 +17,25 @@ the model parameters should [cite](#citing-this-work) the
 
 The following steps are required in order to run AlphaFold:
 
-### Install on Ubuntu
-
-1.  Requirements
-    * NVIDIA cuda driver >= 11.0
-    * [Miniconda](https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-py38_4.9.2-Linux-x86_64.sh)
-
-1.  Install softwares
-    ```
-    conda create -n af2 python=3.8
-    conda activate af2
-    ./install_ubuntu.sh
-    ```
-
+1.  Install [Docker](https://www.docker.com/).
+    *   Install
+        [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+        for GPU support.
+    *   Setup running
+        [Docker as a non-root user](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
 1.  Download genetic databases (see below).
 1.  Download model parameters (see below).
+1.  Check that AlphaFold will be able to use a GPU by running:
+
+    ```bash
+    docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+    ```
+
+    The output of this command should show a list of your GPUs. If it doesn't,
+    check if you followed all steps correctly when setting up the
+    [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+    or take a look at the following
+    [NVIDIA Docker issue](https://github.com/NVIDIA/nvidia-docker/issues/1447#issuecomment-801479573).
 
 ### Genetic databases
 
@@ -99,8 +103,12 @@ will download parameters for:
     predicted aligned error values alongside their structure predictions (see
     Jumper et al. 2021, Suppl. Methods 1.9.7 for details).
 
-## Running AlphaFold on local
+## Running AlphaFold
 
+**The simplest way to run AlphaFold is using the provided Docker script.** This
+was tested on Google Cloud with a machine using the `nvidia-gpu-cloud-image`
+with 12 vCPUs, 85 GB of RAM, a 100 GB boot disk, the databases on an additional
+3 TB disk, and an A100 GPU.
 
 1.  Clone this repository and `cd` into it.
 
@@ -108,21 +116,38 @@ will download parameters for:
     git clone https://github.com/deepmind/alphafold.git
     ```
 
-1.  Run `run_alphafold.py` pointing to a FASTA file containing the protein sequence
+1.  Modify `DOWNLOAD_DIR` in `docker/run_docker.py` to be the path to the
+    directory containing the downloaded databases.
+1.  Build the Docker image:
+
+    ```bash
+    docker build -f docker/Dockerfile -t alphafold .
+    ```
+
+1.  Install the `run_docker.py` dependencies. Note: You may optionally wish to
+    create a
+    [Python Virtual Environment](https://docs.python.org/3/tutorial/venv.html)
+    to prevent conflicts with your system's Python environment.
+
+    ```bash
+    pip3 install -r docker/requirements.txt
+    ```
+
+1.  Run `run_docker.py` pointing to a FASTA file containing the protein sequence
     for which you wish to predict the structure. If you are predicting the
     structure of a protein that is already in PDB and you wish to avoid using it
     as a template, then `max_template_date` must be set to be before the release
     date of the structure. For example, for the T1050 CASP14 target:
 
     ```bash
-    python3 run_alphafold.py --fasta_paths=T1050.fasta --max_template_date=2020-05-14
-    # or simply
-    exp/run_local.sh T1050.fasta
+    python3 docker/run_docker.py --fasta_paths=T1050.fasta --max_template_date=2020-05-14
     ```
 
     By default, Alphafold will attempt to use all visible GPU devices. To use a
     subset, specify a comma-separated list of GPU UUID(s) or index(es) using the
-    `CUDA_VISIBLE_DEVICES=0`. 
+    `--gpu_devices` flag. See
+    [GPU enumeration](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/user-guide.html#gpu-enumeration)
+    for more details.
 
 1.  You can control AlphaFold speed / quality tradeoff by adding either
     `--preset=full_dbs` or `--preset=casp14` to the run command. We provide the

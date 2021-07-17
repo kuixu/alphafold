@@ -41,9 +41,6 @@ from alphafold.relax import relax
 # Set to target of scripts/download_all_databases.sh
 DOWNLOAD_DIR = '/data01/xukui/alphafold'
 
-# Name of the AlphaFold Docker image.
-docker_image_name = 'alphafold'
-
 # Path to a directory that will store the results.
 output_dir = '/data01/xukui/alphafold/out'
 
