@@ -20,16 +20,16 @@ The following steps are required in order to run AlphaFold:
 ### Install on Ubuntu
 
 1.  Requirements
-    * NVIDIA cuda driver >= 11.0
+    * NVIDIA cuda driver >= 10.2
     * [Miniconda](https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-py38_4.9.2-Linux-x86_64.sh)
 
 1.  Install softwares
     ```bash
     git clone https://github.com/kuixu/alphafold.git
     cd alphafold
-    conda create -n af2 python=3.8
+    conda create -n af2 python=3.8 -y
     conda activate af2
-    ./install_ubuntu.sh
+    ./install_on_ubuntu.sh
     ```
 
 1.  Download genetic databases (see below).
