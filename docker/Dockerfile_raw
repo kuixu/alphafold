@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG CUDA=10.2
-##ARG CUDA=latest
+ARG CUDA=11.0
 FROM nvidia/cuda:${CUDA}-base
 # FROM directive resets ARGS, so we specify again (the value is retained if
 # previously set).
@@ -34,60 +33,41 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Compile HHsuite from source.
-# RUN git clone --branch v3.3.0 git@github.com:soedinglab/hh-suite.git /tmp/hh-suite \
-#     && mkdir /tmp/hh-suite/build
-##RUN git clone --branch v3.3.0 git@github.com:soedinglab/hh-suite.git hh-suite &&  mkdir -p hh-suite/build
-#RUN git clone https://github.com/soedinglab/hh-suite.git && 
-COPY ./hh-suite  /app/hh-suite
-RUN mkdir -p /app/hh-suite/build 
-WORKDIR /app/hh-suite/build
+RUN git clone --branch v3.3.0 https://github.com/soedinglab/hh-suite.git /tmp/hh-suite \
+    && mkdir /tmp/hh-suite/build
+WORKDIR /tmp/hh-suite/build
 RUN cmake -DCMAKE_INSTALL_PREFIX=/opt/hhsuite .. \
     && make -j 4 && make install \
     && ln -s /opt/hhsuite/bin/* /usr/bin \
-    && rm -rf /app/hh-suite
-#&& cmake  .. && make -j 4 && make install && ln -s  /app/hh-suite/build/bin/* /usr/bin
-# RUN ln -s hh-suite/build/bin/* /usr/bin
-# COPY hh-suite/build/bin/* /usr/bin/
-##WORKDIR hh-suite/build
-##RUN  cmake  .. && make -j 4 && make install \
-    ### ln -s hh-suite-program/bin/* /usr/bin \
-    ## rm -rf hh-suite 
+    && rm -rf /tmp/hh-suite
+
 # Install Miniconda package manger.
-##RUN wget -q -P /tmp \
-RUN wget  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
-###RUN apt-get install mpich
-##RUN wget  https://repo.anaconda.com/miniconda/Miniconda3-py39_4.9.2-Linux-x86_64.sh && sh Miniconda3-py39_4.9.2-Linux-x86_64.sh --yes
-   ##bash /tmp/Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda \
-    ##&& rm /tmp/Miniconda3-latest-Linux-x86_64.sh
+RUN wget -q -P /tmp \
+  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+    && bash /tmp/Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda \
+    && rm /tmp/Miniconda3-latest-Linux-x86_64.sh
 
 # Install conda packages.
-ENV PATH="/opt/conda/bin:$PATH"
+ENV PATH="/opt/conda/bin:$PATH"`1
 RUN conda update -qy conda \
     && conda install -y -c conda-forge \
       openmm=7.5.1 \
-      #cudatoolkit==8.2 \
+      cudatoolkit==${CUDA}.3 \
       pdbfixer \
       pip
-RUN conda install -c prometeia cudatoolkit -y
-#RUN conda install -c anaconda cudnn -y
-
-#COPY /home/jsptgpu/xukui/usr/cuda/lib64/libcudnn.so.8.2.2 
-#conda install -c anaconda cudnn
 
 COPY . /app/alphafold
 RUN wget -q -P /app/alphafold/alphafold/common/ \
   https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt
 
+
+
 # Install pip packages.
 RUN pip3 install --upgrade pip \
     && pip3 install -r /app/alphafold/requirements.txt \
-    && pip3 install --upgrade "jax[cuda111]" -f \
+    && pip3 install --upgrade jax['cuda111] jaxlib==0.1.69+cuda${CUDA/./} -f \
       https://storage.googleapis.com/jax-releases/jax_releases.html
-#jaxlib==0.1.69+cuda111 
-COPY ./jaxlib-0.1.69+cuda111-cp38-none-manylinux2010_x86_64.whl /app/jaxlib-0.1.69+cuda111-cp38-none-manylinux2010_x86_64.whl
-RUN pip3 install  /app/jaxlib-0.1.69+cuda111-cp38-none-manylinux2010_x86_64.whl 
-    #&& pip3 install --upgrade jax jaxlib==0.1.69+cuda${CUDA/./} -f \
-    #  https://storage.googleapis.com/jax-releases/jax_releases.html
+
 # Apply OpenMM patch.
 WORKDIR /opt/conda/lib/python3.8/site-packages
 RUN patch -p0 < /app/alphafold/docker/openmm.patch
@@ -102,5 +82,4 @@ RUN echo $'#!/bin/bash\n\
 ldconfig\n\
 python /app/alphafold/run_alphafold.py "$@"' > /app/run_alphafold.sh \
   && chmod +x /app/run_alphafold.sh
-ENV PATH="/opt/conda/bin:$PATH"
 ENTRYPOINT ["/app/run_alphafold.sh"]

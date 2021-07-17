@@ -14,7 +14,7 @@
 
 """Docker launch script for Alphafold docker image."""
 
-import os
+import os,sys,json
 import signal
 from typing import Tuple
 
@@ -28,13 +28,13 @@ from docker import types
 #### USER CONFIGURATION ####
 
 # Set to target of scripts/download_all_databases.sh
-DOWNLOAD_DIR = 'SET ME'
+DOWNLOAD_DIR = '/data01/xukui/alphafold'
 
 # Name of the AlphaFold Docker image.
 docker_image_name = 'alphafold'
 
 # Path to a directory that will store the results.
-output_dir = '/tmp/alphafold'
+output_dir = '/data01/xukui/alphafold/out'
 
 # Names of models to use.
 model_names = [
@@ -66,7 +66,8 @@ bfd_database_path = os.path.join(
 
 # Path to the Uniclust30 database for use by HHblits.
 uniclust30_database_path = os.path.join(
-    DOWNLOAD_DIR, 'uniclust30', 'uniclust30_2018_08', 'uniclust30_2018_08')
+    DOWNLOAD_DIR, 'uniclust30', 'UniRef30_2020_02')
+    # DOWNLOAD_DIR, 'uniclust30', 'UniRef30_2020_02', 'UniRef30_2020_02')
 
 # Path to the PDB70 database for use by HHsearch.
 pdb70_database_path = os.path.join(DOWNLOAD_DIR, 'pdb70', 'pdb70')
@@ -103,15 +104,23 @@ flags.DEFINE_boolean('benchmark', False, 'Run multiple JAX model evaluations '
                      'inferencing many proteins.')
 
 FLAGS = flags.FLAGS
-
 _ROOT_MOUNT_DIRECTORY = '/mnt/'
 
 
+def update_status(jobid, jdict):
+    sfile = 'jobs/{}/status'.format(jobid)
+    jdata = json.load(open(sfile))
+    jdata.update(jdict)
+    with open(sfile, "w") as f:
+            f.write(json.dumps(jdata))
+
+# logging.get_absl_handler().python_handler.stream = sys.stdout
 def _create_mount(mount_name: str, path: str) -> Tuple[types.Mount, str]:
   path = os.path.abspath(path)
   source_path = os.path.dirname(path)
   target_path = os.path.join(_ROOT_MOUNT_DIRECTORY, mount_name)
   logging.info('Mounting %s -> %s', source_path, target_path)
+  # print('Mounting %s -> %s', source_path, target_path)
   mount = types.Mount(target_path, source_path, type='bind', read_only=True)
   return mount, os.path.join(target_path, os.path.basename(path))
 
@@ -119,16 +128,29 @@ def _create_mount(mount_name: str, path: str) -> Tuple[types.Mount, str]:
 def main(argv):
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
+  basename=os.path.basename(FLAGS.fasta_paths[0]).replace(".fasta","")
+  logging.info('basename %s ', basename)
+  jobid = basename
+  update_status(jobid, {'msg': "Job has been allocated resources."})
+  
 
   mounts = []
   command_args = []
 
+  
+  logging.get_absl_handler().use_absl_log_file(basename, output_dir)
+  os.system(" ln -s  {}/{}.INFO jobs/{}/log0".format(output_dir,basename,basename))
+  os.system(" ln -s  {}/{}/unrelaxed_model_1.pdb jobs/{}/unrelaxed_model_1.pdb".format(output_dir,basename,basename))
+  # os.system(" ln -s  {}/b27/unrelaxed_model_1.pdb jobs/{}/unrelaxed_model_1.pdb".format(output_dir,basename))
+  
   # Mount each fasta path as a unique target directory.
   target_fasta_paths = []
   for i, fasta_path in enumerate(FLAGS.fasta_paths):
     mount, target_path = _create_mount(f'fasta_path_{i}', fasta_path)
     mounts.append(mount)
     target_fasta_paths.append(target_path)
+  
+  update_status(jobid, {'msg': "MSA..."})
   command_args.append(f'--fasta_paths={",".join(target_fasta_paths)}')
 
   for name, path in [('uniref90_database_path', uniref90_database_path),
@@ -178,7 +200,18 @@ def main(argv):
 
   for line in container.logs(stream=True):
     logging.info(line.strip().decode('utf-8'))
-
+    update_status(jobid, {'msg': line.strip().decode('utf-8')})
+    # print(line.strip().decode('utf-8'))
+  os.system(" zip  jobs/{}/results.zip data/out/{}/*.pdb".format(basename,basename))
+  # os.system(" zip  jobs/{}/results.zip data/out/b27/*.pdb".format(basename))
+  update_status(jobid, {
+        'msg': "Complete.", 
+        'stg':5, 
+        'pdb':{
+            'pd':"data/jobs/{}/unrelaxed_model_1.pdb".format(jobid), 
+            'af2':"data/jobs/{}/results.zip".format(jobid), 
+            }
+    })
 
 if __name__ == '__main__':
   flags.mark_flags_as_required([

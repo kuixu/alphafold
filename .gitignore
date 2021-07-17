@@ -1,0 +1,5 @@
+__pycache__
+*.whl
+hh-suite
+data
+jobs

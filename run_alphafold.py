@@ -36,15 +36,71 @@ from alphafold.model import model
 from alphafold.relax import relax
 # Internal import (7716).
 
+#### USER CONFIGURATION ####
+
+# Set to target of scripts/download_all_databases.sh
+DOWNLOAD_DIR = '/data01/xukui/alphafold'
+
+# Name of the AlphaFold Docker image.
+docker_image_name = 'alphafold'
+
+# Path to a directory that will store the results.
+output_dir = '/data01/xukui/alphafold/out'
+
+# Names of models to use.
+model_names = [
+    'model_1',
+    'model_2',
+    'model_3',
+    'model_4',
+    'model_5',
+]
+
+# You can individually override the following paths if you have placed the
+# data in locations other than the DOWNLOAD_DIR.
+
+# Path to directory of supporting data, contains 'params' dir.
+data_dir = DOWNLOAD_DIR
+
+# Path to the Uniref90 database for use by JackHMMER.
+uniref90_database_path = os.path.join(
+    DOWNLOAD_DIR, 'uniref90', 'uniref90.fasta')
+
+# Path to the MGnify database for use by JackHMMER.
+mgnify_database_path = os.path.join(
+    DOWNLOAD_DIR, 'mgnify', 'mgy_clusters.fa')
+
+# Path to the BFD database for use by HHblits.
+bfd_database_path = os.path.join(
+    DOWNLOAD_DIR, 'bfd',
+    'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt')
+
+# Path to the Uniclust30 database for use by HHblits.
+uniclust30_database_path = os.path.join(
+    DOWNLOAD_DIR, 'uniclust30', 'UniRef30_2020_02')
+    #DOWNLOAD_DIR, 'uniclust30', 'uniclust30_2018_08', 'uniclust30_2018_08')
+
+# Path to the PDB70 database for use by HHsearch.
+pdb70_database_path = os.path.join(DOWNLOAD_DIR, 'pdb70', 'pdb70')
+
+# Path to a directory with template mmCIF structures, each named <pdb_id>.cif')
+template_mmcif_dir = os.path.join(DOWNLOAD_DIR, 'pdb_mmcif', 'mmcif_files')
+
+# Path to a file mapping obsolete PDB IDs to their replacements.
+obsolete_pdbs_path = os.path.join(DOWNLOAD_DIR, 'pdb_mmcif', 'obsolete.dat')
+
+#### END OF USER CONFIGURATION ####
+
+
 flags.DEFINE_list('fasta_paths', None, 'Paths to FASTA files, each containing '
                   'one sequence. Paths should be separated by commas. '
                   'All FASTA paths must have a unique basename as the '
                   'basename is used to name the output directories for '
                   'each prediction.')
-flags.DEFINE_string('output_dir', None, 'Path to a directory that will '
+flags.DEFINE_string('output_dir', output_dir, 'Path to a directory that will '
                     'store the results.')
-flags.DEFINE_list('model_names', None, 'Names of models to use.')
-flags.DEFINE_string('data_dir', None, 'Path to directory of supporting data.')
+flags.DEFINE_list('model_names', model_names, 'Names of models to use.')
+flags.DEFINE_string('data_dir', data_dir, 'Path to directory of supporting data.')
 flags.DEFINE_string('jackhmmer_binary_path', '/usr/bin/jackhmmer',
                     'Path to the JackHMMER executable.')
 flags.DEFINE_string('hhblits_binary_path', '/usr/bin/hhblits',
@@ -53,21 +109,21 @@ flags.DEFINE_string('hhsearch_binary_path', '/usr/bin/hhsearch',
                     'Path to the HHsearch executable.')
 flags.DEFINE_string('kalign_binary_path', '/usr/bin/kalign',
                     'Path to the Kalign executable.')
-flags.DEFINE_string('uniref90_database_path', None, 'Path to the Uniref90 '
+flags.DEFINE_string('uniref90_database_path', uniref90_database_path, 'Path to the Uniref90 '
                     'database for use by JackHMMER.')
-flags.DEFINE_string('mgnify_database_path', None, 'Path to the MGnify '
+flags.DEFINE_string('mgnify_database_path', mgnify_database_path, 'Path to the MGnify '
                     'database for use by JackHMMER.')
-flags.DEFINE_string('bfd_database_path', None, 'Path to the BFD '
+flags.DEFINE_string('bfd_database_path', bfd_database_path, 'Path to the BFD '
                     'database for use by HHblits.')
-flags.DEFINE_string('uniclust30_database_path', None, 'Path to the Uniclust30 '
+flags.DEFINE_string('uniclust30_database_path', uniclust30_database_path, 'Path to the Uniclust30 '
                     'database for use by HHblits.')
-flags.DEFINE_string('pdb70_database_path', None, 'Path to the PDB70 '
+flags.DEFINE_string('pdb70_database_path', pdb70_database_path, 'Path to the PDB70 '
                     'database for use by HHsearch.')
-flags.DEFINE_string('template_mmcif_dir', None, 'Path to a directory with '
+flags.DEFINE_string('template_mmcif_dir', template_mmcif_dir, 'Path to a directory with '
                     'template mmCIF structures, each named <pdb_id>.cif')
-flags.DEFINE_string('max_template_date', None, 'Maximum template release date '
+flags.DEFINE_string('max_template_date', '2020-05-14', 'Maximum template release date '
                     'to consider. Important if folding historical test sets.')
-flags.DEFINE_string('obsolete_pdbs_path', None, 'Path to file containing a '
+flags.DEFINE_string('obsolete_pdbs_path', obsolete_pdbs_path, 'Path to file containing a '
                     'mapping from obsolete PDB IDs to the PDB IDs of their '
                     'replacements.')
 flags.DEFINE_enum('preset', 'full_dbs', ['full_dbs', 'casp14'],
@@ -110,6 +166,8 @@ def predict_structure(
   if not os.path.exists(msa_output_dir):
     os.makedirs(msa_output_dir)
 
+  #features_output_path = os.path.join(output_dir, 'features.pkl')
+  #if not os.path.exists(features_output_path):
   # Get features.
   t_0 = time.time()
   feature_dict = data_pipeline.process(
@@ -281,3 +339,4 @@ if __name__ == '__main__':
   ])
 
   app.run(main)
+

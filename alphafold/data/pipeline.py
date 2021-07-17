@@ -18,7 +18,7 @@ import os
 from typing import Mapping, Sequence
 
 import numpy as np
-
+from absl import logging
 # Internal import (7716).
 
 from alphafold.common import residue_constants
@@ -123,22 +123,49 @@ class DataPipeline:
     input_description = input_descs[0]
     num_res = len(input_sequence)
 
-    jackhmmer_uniref90_result = self.jackhmmer_uniref90_runner.query(
+    uniref90_out_path = os.path.join(msa_output_dir, 'uniref90_hits.sto')
+    mgnify_out_path = os.path.join(msa_output_dir, 'mgnify_hits.sto')
+    bfd_out_path = os.path.join(msa_output_dir, 'bfd_uniclust_hits.a3m')
+    if not os.path.exists(uniref90_out_path):
+      logging.info("query uniref90")
+      jackhmmer_uniref90_result = self.jackhmmer_uniref90_runner.query(
+          input_fasta_path)
+      with open(uniref90_out_path, 'w') as f:
+        f.write(jackhmmer_uniref90_result['sto'])
+    else:
+      logging.info("loading uniref90")
+      jackhmmer_uniref90_result ={}
+      with open(uniref90_out_path, 'r') as f:
+        jackhmmer_uniref90_result['sto'] = f.read()
+    if not os.path.exists(mgnify_out_path):
+      logging.info("query mgnify")
+      jackhmmer_mgnify_result = self.jackhmmer_mgnify_runner.query(
+          input_fasta_path)
+      with open(mgnify_out_path, 'w') as f:
+        f.write(jackhmmer_mgnify_result['sto'])
+    else:
+      logging.info("loading mgnify")
+      jackhmmer_mgnify_result={}
+      with open(mgnify_out_path, 'r') as f:
+        jackhmmer_mgnify_result['sto'] = f.read()
+
+    if not os.path.exists(bfd_out_path):
+      logging.info("query mgnify")
+      hhblits_bfd_uniclust_result = self.hhblits_bfd_uniclust_runner.query(
         input_fasta_path)
-    jackhmmer_mgnify_result = self.jackhmmer_mgnify_runner.query(
-        input_fasta_path)
+      with open(bfd_out_path, 'w') as f:
+        f.write(hhblits_bfd_uniclust_result['a3m'])
+    else:
+      logging.info("loading mgnify")
+      hhblits_bfd_uniclust_result={}
+      with open(bfd_out_path, 'r') as f:
+        hhblits_bfd_uniclust_result['a3m'] = f.read()
 
     uniref90_msa_as_a3m = parsers.convert_stockholm_to_a3m(
         jackhmmer_uniref90_result['sto'], max_sequences=self.uniref_max_hits)
     hhsearch_result = self.hhsearch_pdb70_runner.query(uniref90_msa_as_a3m)
 
-    uniref90_out_path = os.path.join(msa_output_dir, 'uniref90_hits.sto')
-    with open(uniref90_out_path, 'w') as f:
-      f.write(jackhmmer_uniref90_result['sto'])
-
-    mgnify_out_path = os.path.join(msa_output_dir, 'mgnify_hits.sto')
-    with open(mgnify_out_path, 'w') as f:
-      f.write(jackhmmer_mgnify_result['sto'])
+    
 
     uniref90_msa, uniref90_deletion_matrix = parsers.parse_stockholm(
         jackhmmer_uniref90_result['sto'])
@@ -148,12 +175,6 @@ class DataPipeline:
     mgnify_msa = mgnify_msa[:self.mgnify_max_hits]
     mgnify_deletion_matrix = mgnify_deletion_matrix[:self.mgnify_max_hits]
 
-    hhblits_bfd_uniclust_result = self.hhblits_bfd_uniclust_runner.query(
-        input_fasta_path)
-
-    bfd_out_path = os.path.join(msa_output_dir, 'bfd_uniclust_hits.a3m')
-    with open(bfd_out_path, 'w') as f:
-      f.write(hhblits_bfd_uniclust_result['a3m'])
 
     bfd_msa, bfd_deletion_matrix = parsers.parse_a3m(
         hhblits_bfd_uniclust_result['a3m'])
