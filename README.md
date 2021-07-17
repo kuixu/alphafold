@@ -24,7 +24,9 @@ The following steps are required in order to run AlphaFold:
     * [Miniconda](https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-py38_4.9.2-Linux-x86_64.sh)
 
 1.  Install softwares
-    ```
+    ```bash
+    git clone https://github.com/kuixu/alphafold.git
+    cd alphafold
     conda create -n af2 python=3.8
     conda activate af2
     ./install_ubuntu.sh
@@ -104,9 +106,7 @@ will download parameters for:
 
 1.  Clone this repository and `cd` into it.
 
-    ```bash
-    git clone https://github.com/deepmind/alphafold.git
-    ```
+    
 
 1.  Run `run_alphafold.py` pointing to a FASTA file containing the protein sequence
     for which you wish to predict the structure. If you are predicting the
