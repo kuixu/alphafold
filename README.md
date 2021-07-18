@@ -33,9 +33,7 @@ The following steps are required in order to run AlphaFold:
     ```
     or  step by step
     ```
-
         
-    # conda pkgs
     conda create -n af2 python=3.8 -y
     conda activate af2
 
@@ -55,6 +53,7 @@ The following steps are required in order to run AlphaFold:
 
     # work_path=/path/to/alphafold-code
     work_path=$(PWD)
+    
     # update openmm 
     a=$(which python)
     cd $(dirname $(dirname $a))/lib/python3.8/site-packages
