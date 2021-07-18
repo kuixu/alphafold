@@ -84,6 +84,15 @@ The following steps are required in order to run AlphaFold:
 1.  Download genetic databases (see below).
 1.  Download model parameters (see below).
 
+1.  Set path.
+    ```
+    # Set to target of scripts/download_all_databases.sh
+    DOWNLOAD_DIR = '/path/to/database'
+
+    # Path to a directory that will store the results.
+    output_dir = '/path/to/output_dir'
+
+    ```
 ### Genetic databases
 
 This step requires `rsync` and `aria2c` to be installed on your machine.
