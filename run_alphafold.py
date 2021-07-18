@@ -98,13 +98,13 @@ flags.DEFINE_string('output_dir', output_dir, 'Path to a directory that will '
                     'store the results.')
 flags.DEFINE_list('model_names', model_names, 'Names of models to use.')
 flags.DEFINE_string('data_dir', data_dir, 'Path to directory of supporting data.')
-flags.DEFINE_string('jackhmmer_binary_path', '/usr/bin/jackhmmer',
+flags.DEFINE_string('jackhmmer_binary_path', 'jackhmmer',
                     'Path to the JackHMMER executable.')
-flags.DEFINE_string('hhblits_binary_path', '/usr/bin/hhblits',
+flags.DEFINE_string('hhblits_binary_path', 'hhblits',
                     'Path to the HHblits executable.')
-flags.DEFINE_string('hhsearch_binary_path', '/usr/bin/hhsearch',
+flags.DEFINE_string('hhsearch_binary_path', 'hhsearch',
                     'Path to the HHsearch executable.')
-flags.DEFINE_string('kalign_binary_path', '/usr/bin/kalign',
+flags.DEFINE_string('kalign_binary_path', 'kalign',
                     'Path to the Kalign executable.')
 flags.DEFINE_string('uniref90_database_path', uniref90_database_path, 'Path to the Uniref90 '
                     'database for use by JackHMMER.')
