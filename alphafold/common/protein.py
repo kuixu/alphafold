@@ -219,10 +219,12 @@ def from_prediction(features: FeatureDict, result: ModelOutput) -> Protein:
   """
   fold_output = result['structure_module']
   dist_per_residue = np.zeros_like(fold_output['final_atom_mask'])
+  plddt = np.expand_dims(result['plddt'],axis=1)
+  plddt = np.repeat(plddt, residue_constants.atom_type_num, axis=1)
 
   return Protein(
       aatype=features['aatype'][0],
       atom_positions=fold_output['final_atom_positions'],
       atom_mask=fold_output['final_atom_mask'],
       residue_index=features['residue_index'][0] + 1,
-      b_factors=dist_per_residue)
+      b_factors=plddt)
