@@ -21,9 +21,8 @@ pip3 install --upgrade pip \
     https://storage.googleapis.com/jax-releases/jax_releases.html
 
 # work_path=/path/to/alphafold-code
-work_path=$(PWD)
+work_path="$PWD"
 # update openmm 
-a=$(which python)
-cd $(dirname $(dirname $a))/lib/python3.8/site-packages
-patch -p0 < $work_path/docker/openmm.patch
-
+a="$(which python)"
+cd "$(dirname "$(dirname "$a")")/lib/python3.8/site-packages"
+patch -p0 < "$work_path/docker/openmm.patch"
